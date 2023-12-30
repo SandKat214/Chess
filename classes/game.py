@@ -39,6 +39,9 @@ class Game:
         else:
             self._turn = PLAYER_WHITE
 
+        # Clear all en passant
+        self._board.clear_en_passant(self._turn)
+
     def display(self):
         """Takes no parameters. Displays the current state of the game."""
         self._board.draw(self._window)

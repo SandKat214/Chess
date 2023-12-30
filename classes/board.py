@@ -106,6 +106,16 @@ class Board:
         """
         return self._board[row][col]
 
+    def clear_en_passant(self, turn_team):
+        """Falsifies en_passant status of any pawn from opposing team that
+        wasn't captured on that move.
+        """
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = self._board[row][col]
+                if piece is not None and piece.get_team() == turn_team and piece.get_type() == 'PAWN':
+                    piece.not_en_passant()
+
     def remove(self, piece):
         """Takes an object, from a certain board position, as parameter. If
         that object is a piece, removes it from the game board and updates
@@ -131,5 +141,12 @@ class Board:
          self._board[row][col], self._board[piece.get_row()][piece.get_col()]
 
         # update piece information
-        piece.increment_turns()
+        # en passant?
+        if piece.get_type() == 'PAWN' and piece.is_first_turn() and (3 <= row <= 4):
+            left = self._board[row][col - 1] if col > 0 else None
+            right = self._board[row][col + 1] if col < 7 else None
+            if (left is not None and left.get_type() == 'PAWN' and left.get_team() != piece.get_team()) \
+             or (right is not None and right.get_type() == 'PAWN' and right.get_team() != piece.get_team()):
+                piece.is_en_passant()
+        piece.not_first()
         piece.change_pos(row, col)

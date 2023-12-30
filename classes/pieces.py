@@ -19,7 +19,7 @@ class Piece:
         self._team = team
         self._row = row
         self._col = col
-        self._turns = 0
+        self._first_turn = True
         self._x_coord = 0
         self._y_coord = 0
         self.find_position()        # sets initial x and y coord data members
@@ -36,8 +36,9 @@ class Piece:
         """Takes no parameters and returns to column data member."""
         return self._col
 
-    def get_turns(self):
-        """Takes no parameters and returns the turns data member."""
+    def is_first_turn(self):
+        """Returns first turn data member."""
+        return self._first_turn
 
     def find_position(self):
         """Calculates the middle of the piece's square on the game window."""
@@ -52,9 +53,9 @@ class Piece:
         self._col = col
         self.find_position()
 
-    def increment_turns(self):
+    def not_first(self):
         """Increases turn data member by one."""
-        self._turns += 1
+        self._first_turn = False
 
     def move(self, board, row, col, team, vert=0, horiz=0, rec=False, first=False):
         """Simulates a piece's potential move on the game board to determine
@@ -90,9 +91,24 @@ class Pawn(Piece):
     representation of the Pawn, as well as the particular and special movements
     associated with a Pawn piece.
     """
+    def __init__(self, team, row, col):
+        """Creates a pawn piece with the same parameters and data members as the parent
+        class. Includes one additional data member, en passant boolean.
+        """
+        super().__init__(team, row, col)
+        self._en_passant = False
+
     def get_type(self):
         """Takes no parameters and returns the piece type."""
         return 'PAWN'
+
+    def is_en_passant(self):
+        """Sets en passant data member to True."""
+        self._en_passant = True
+
+    def not_en_passant(self):
+        """Sets en passant data member to False."""
+        self._en_passant = False
 
     def draw(self, window):
         """Draws the piece."""
@@ -112,16 +128,15 @@ class Pawn(Piece):
         capture_moves = {}
 
         # team determines direction of movement
-        first = self._turns == 0
         if self._team == PLAYER_WHITE:
-            stand_moves.update(self.move(board, self._row - 1, self._col, self._team, -1, 0, False, first))
+            stand_moves.update(self.move(board, self._row - 1, self._col, self._team, -1, 0, False, self._first_turn))
 
             # capture movement is different for pawns
             capture_moves.update(self.move(board, self._row - 1, self._col - 1, self._team))
             capture_moves.update(self.move(board, self._row - 1, self._col + 1, self._team))
 
         else:   # team is BLACK
-            stand_moves.update(self.move(board, self._row + 1, self._col, self._team, 1, 0, False, first))
+            stand_moves.update(self.move(board, self._row + 1, self._col, self._team, 1, 0, False, self._first_turn))
             capture_moves.update(self.move(board, self._row + 1, self._col - 1, self._team))
             capture_moves.update(self.move(board, self._row + 1, self._col + 1, self._team))
 
@@ -134,7 +149,11 @@ class Pawn(Piece):
         # capture move can only capture a piece
         for pos, value in capture_moves.items():
             if value is None:
-                keys_to_be_removed.append(pos)
+                en_passant = board[self._row][pos[1]]
+                if en_passant is not None and en_passant.get_type() == 'PAWN' and en_passant._en_passant:
+                    capture_moves[pos] = en_passant
+                else:
+                    keys_to_be_removed.append(pos)
 
         stand_moves.update(capture_moves)
         for key in keys_to_be_removed:
