@@ -117,19 +117,19 @@ class Board:
             self._board[piece.get_row()][piece.get_col()] = None    # remove piece from board
             self._pieces[key] -= 1      # decrease quantity in pieces library
 
-    def update_board(self, piece, row, col):
+    def update_board(self, piece, row, col, captured):
         """Takes a piece object as a parameter, as well as the row and column
-        position to where it is moving to on the game board. Removes a
-        captured piece (if appropriate), and moves the piece to the new position.
+        position to where it is moving to on the game board, and the object
+        captured by that piece. Removes captured piece (if appropriate), and
+        moves the piece to the new position.
         """
-        captured_piece = self._board[row][col]
-
         # remove piece if applicable
-        self.remove(captured_piece)
+        self.remove(captured)
 
         # swap the objects at the two locations
         self._board[piece.get_row()][piece.get_col()], self._board[row][col] =\
          self._board[row][col], self._board[piece.get_row()][piece.get_col()]
 
         # update piece information
+        piece.increment_turns()
         piece.change_pos(row, col)

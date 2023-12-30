@@ -28,11 +28,7 @@ class Game:
         self._board = Board()
         self._turn = PLAYER_WHITE
         self._chosen = None
-        self._valid_moves = []
-
-    def get_turn(self):
-        """Takes no parameters and returns the turn data member."""
-        return self._turn
+        self._valid_moves = {}      # key is position, value is captured object
 
     def update_turn(self):
         """Takes no parameters. Signals a new turn and updates the turn data
@@ -81,6 +77,7 @@ class Game:
             return self.make_move(self._chosen, row, col)
 
         piece = self._board.get_piece(row, col)
+
         # check validity
         if piece is not None and piece.get_team() == self._turn:
             self._valid_moves = piece.get_valid_moves(self._board.get_board())
@@ -108,8 +105,8 @@ class Game:
         self._chosen = None
 
         if (row, col) in self._valid_moves:
-            self._board.update_board(piece, row, col)
-            self._valid_moves = []
+            self._board.update_board(piece, row, col, self._valid_moves[(row, col)])
+            self._valid_moves = {}
             self.update_turn()
             return True
 

@@ -19,6 +19,7 @@ class Piece:
         self._team = team
         self._row = row
         self._col = col
+        self._turns = 0
         self._x_coord = 0
         self._y_coord = 0
         self.find_position()        # sets initial x and y coord data members
@@ -35,6 +36,9 @@ class Piece:
         """Takes no parameters and returns to column data member."""
         return self._col
 
+    def get_turns(self):
+        """Takes no parameters and returns the turns data member."""
+
     def find_position(self):
         """Calculates the middle of the piece's square on the game window."""
         self._x_coord = SQUARE_SIZE * self._col + SQUARE_SIZE // 2
@@ -48,30 +52,34 @@ class Piece:
         self._col = col
         self.find_position()
 
+    def increment_turns(self):
+        """Increases turn data member by one."""
+        self._turns += 1
+
     def move(self, board, row, col, team, vert=0, horiz=0, rec=False, first=False):
         """Simulates a piece's potential move on the game board to determine
-        the positions of all legal moves. Returns a list of potential
-        moves, if any. Otherwise, returns an empty list.
+        the positions of all legal moves. Returns a dictionary of potential
+        moves, if any. Otherwise, returns an empty dictionary.
         """
-        moves_list = []
+        moves_list = {}     # key is position, value is captured object
 
-        # if piece is out of bounds, return empty list
+        # if piece is out of bounds, return empty dictionary
         if row < 0 or row > 7 or col < 0 or col > 7:
             return moves_list
 
         pos = board[row][col]
 
         if pos is None:     # empty square
-            moves_list.append((row, col))
+            moves_list.update({(row, col): None})
         elif pos.get_team() != team:    # captured piece
-            moves_list.append((row, col))
+            moves_list.update({(row, col): pos})
             return moves_list
         else:       # piece is team member
             return moves_list
 
         # If piece allows recursive movements or piece is Pawn on first move
         if rec or first:
-            moves_list += self.move(board, row + vert, col + horiz, team, vert, horiz, rec)
+            moves_list.update(self.move(board, row + vert, col + horiz, team, vert, horiz, rec))
 
         return moves_list
 
@@ -97,38 +105,42 @@ class Pawn(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        stand_moves = []
-        capture_moves = []
+        stand_moves = {}
+        capture_moves = {}
 
         # team determines direction of movement
+        first = self._turns == 0
         if self._team == PLAYER_WHITE:
-            first = True if self._row == 6 else False
-            stand_moves += self.move(board, self._row - 1, self._col, self._team, -1, 0, False, first)
+            stand_moves.update(self.move(board, self._row - 1, self._col, self._team, -1, 0, False, first))
 
             # capture movement is different for pawns
-            capture_moves += self.move(board, self._row - 1, self._col - 1, self._team)
-            capture_moves += self.move(board, self._row - 1, self._col + 1, self._team)
+            capture_moves.update(self.move(board, self._row - 1, self._col - 1, self._team))
+            capture_moves.update(self.move(board, self._row - 1, self._col + 1, self._team))
 
         else:   # team is BLACK
-            first = True if self._row == 1 else False
-            stand_moves += self.move(board, self._row + 1, self._col, self._team, 1, 0, False, first)
-            capture_moves += self.move(board, self._row + 1, self._col - 1, self._team)
-            capture_moves += self.move(board, self._row + 1, self._col + 1, self._team)
+            stand_moves.update(self.move(board, self._row + 1, self._col, self._team, 1, 0, False, first))
+            capture_moves.update(self.move(board, self._row + 1, self._col - 1, self._team))
+            capture_moves.update(self.move(board, self._row + 1, self._col + 1, self._team))
 
         # standard move cannot capture a piece
-        for pos in stand_moves:
-            if board[pos[0]][pos[1]] is not None:
-                stand_moves.remove(pos)
+        keys_to_be_removed = []
+        for pos, value in stand_moves.items():
+            if value is not None:
+                keys_to_be_removed.append(pos)
 
         # capture move can only capture a piece
-        for pos in capture_moves:
-            if board[pos[0]][pos[1]] is None:
-                capture_moves.remove(pos)
+        for pos, value in capture_moves.items():
+            if value is None:
+                keys_to_be_removed.append(pos)
 
-        return stand_moves + capture_moves
+        stand_moves.update(capture_moves)
+        for key in keys_to_be_removed:
+            del stand_moves[key]
+
+        return stand_moves
 
 
 class Rook(Piece):
@@ -152,16 +164,16 @@ class Rook(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        valid_moves = []
+        valid_moves = {}
 
         # North, South, East, and West
-        valid_moves += self.move(board, self._row - 1, self._col, self._team, -1, 0, True)
-        valid_moves += self.move(board, self._row + 1, self._col, self._team, 1, 0, True)
-        valid_moves += self.move(board, self._row, self._col - 1, self._team, 0, -1, True)
-        valid_moves += self.move(board, self._row, self._col + 1, self._team, 0, 1, True)
+        valid_moves.update(self.move(board, self._row - 1, self._col, self._team, -1, 0, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col, self._team, 1, 0, True))
+        valid_moves.update(self.move(board, self._row, self._col - 1, self._team, 0, -1, True))
+        valid_moves.update(self.move(board, self._row, self._col + 1, self._team, 0, 1, True))
 
         return valid_moves
 
@@ -187,22 +199,22 @@ class Knight(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        valid_moves = []
+        valid_moves = {}
 
         # 2up/1left, 2up/1right, 2down/1left, 2down/1right
-        valid_moves += self.move(board, self._row - 2, self._col - 1, self._team)
-        valid_moves += self.move(board, self._row - 2, self._col + 1, self._team)
-        valid_moves += self.move(board, self._row + 2, self._col - 1, self._team)
-        valid_moves += self.move(board, self._row + 2, self._col + 1, self._team)
+        valid_moves.update(self.move(board, self._row - 2, self._col - 1, self._team))
+        valid_moves.update(self.move(board, self._row - 2, self._col + 1, self._team))
+        valid_moves.update(self.move(board, self._row + 2, self._col - 1, self._team))
+        valid_moves.update(self.move(board, self._row + 2, self._col + 1, self._team))
 
         # 2left/1up, 2left/1down, 2right/1up, 2right/1down
-        valid_moves += self.move(board, self._row - 1, self._col - 2, self._team)
-        valid_moves += self.move(board, self._row + 1, self._col - 2, self._team)
-        valid_moves += self.move(board, self._row - 1, self._col + 2, self._team)
-        valid_moves += self.move(board, self._row + 1, self._col + 2, self._team)
+        valid_moves.update(self.move(board, self._row - 1, self._col - 2, self._team))
+        valid_moves.update(self.move(board, self._row + 1, self._col - 2, self._team))
+        valid_moves.update(self.move(board, self._row - 1, self._col + 2, self._team))
+        valid_moves.update(self.move(board, self._row + 1, self._col + 2, self._team))
 
         return valid_moves
 
@@ -228,16 +240,16 @@ class Bishop(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        valid_moves = []
+        valid_moves = {}
 
         # Northwest, Northeast, Southwest, Southeast
-        valid_moves += self.move(board, self._row - 1, self._col - 1, self._team, -1, -1, True)
-        valid_moves += self.move(board, self._row - 1, self._col + 1, self._team, -1, 1, True)
-        valid_moves += self.move(board, self._row + 1, self._col - 1, self._team, 1, -1, True)
-        valid_moves += self.move(board, self._row + 1, self._col + 1, self._team, 1, 1, True)
+        valid_moves.update(self.move(board, self._row - 1, self._col - 1, self._team, -1, -1, True))
+        valid_moves.update(self.move(board, self._row - 1, self._col + 1, self._team, -1, 1, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col - 1, self._team, 1, -1, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col + 1, self._team, 1, 1, True))
 
         return valid_moves
 
@@ -263,22 +275,22 @@ class Queen(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        valid_moves = []
+        valid_moves = {}
 
         # North, West, South, East
-        valid_moves += self.move(board, self._row - 1, self._col, self._team, -1, 0, True)
-        valid_moves += self.move(board, self._row, self._col - 1, self._team, 0, -1, True)
-        valid_moves += self.move(board, self._row + 1, self._col, self._team, 1, 0, True)
-        valid_moves += self.move(board, self._row, self._col + 1, self._team, 0, 1, True)
+        valid_moves.update(self.move(board, self._row - 1, self._col, self._team, -1, 0, True))
+        valid_moves.update(self.move(board, self._row, self._col - 1, self._team, 0, -1, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col, self._team, 1, 0, True))
+        valid_moves.update(self.move(board, self._row, self._col + 1, self._team, 0, 1, True))
 
         # Northwest, Southwest, Southeast, Northeast
-        valid_moves += self.move(board, self._row - 1, self._col - 1, self._team, -1, -1, True)
-        valid_moves += self.move(board, self._row + 1, self._col - 1, self._team, 1, -1, True)
-        valid_moves += self.move(board, self._row + 1, self._col + 1, self._team, 1, 1, True)
-        valid_moves += self.move(board, self._row - 1, self._col + 1, self._team, -1, 1, True)
+        valid_moves.update(self.move(board, self._row - 1, self._col - 1, self._team, -1, -1, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col - 1, self._team, 1, -1, True))
+        valid_moves.update(self.move(board, self._row + 1, self._col + 1, self._team, 1, 1, True))
+        valid_moves.update(self.move(board, self._row - 1, self._col + 1, self._team, -1, 1, True))
 
         return valid_moves
 
@@ -304,21 +316,21 @@ class King(Piece):
 
     def get_valid_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
-        moves for the piece, and returns them in the form of a list containing
+        moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
-        valid_moves = []
+        valid_moves = {}
 
         # North, West, South, East
-        valid_moves += self.move(board, self._row - 1, self._col, self._team)
-        valid_moves += self.move(board, self._row, self._col - 1, self._team)
-        valid_moves += self.move(board, self._row + 1, self._col, self._team)
-        valid_moves += self.move(board, self._row, self._col + 1, self._team)
+        valid_moves.update(self.move(board, self._row - 1, self._col, self._team))
+        valid_moves.update(self.move(board, self._row, self._col - 1, self._team))
+        valid_moves.update(self.move(board, self._row + 1, self._col, self._team))
+        valid_moves.update(self.move(board, self._row, self._col + 1, self._team))
 
         # Northwest, Southwest, Southeast, Northeast
-        valid_moves += self.move(board, self._row - 1, self._col - 1, self._team)
-        valid_moves += self.move(board, self._row + 1, self._col - 1, self._team)
-        valid_moves += self.move(board, self._row + 1, self._col + 1, self._team)
-        valid_moves += self.move(board, self._row - 1, self._col + 1, self._team)
+        valid_moves.update(self.move(board, self._row - 1, self._col - 1, self._team))
+        valid_moves.update(self.move(board, self._row + 1, self._col - 1, self._team))
+        valid_moves.update(self.move(board, self._row + 1, self._col + 1, self._team))
+        valid_moves.update(self.move(board, self._row - 1, self._col + 1, self._team))
 
         return valid_moves
