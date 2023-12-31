@@ -1,6 +1,8 @@
 import pygame
-from constants import HEIGHT, PLAYER_WHITE, PLAYER_BLACK, WIDTH, UNFINISHED
+from constants import BACKGROUND, BOARD_COLOR, FONT_SIZE, HEIGHT, PLAYER_WHITE,\
+    PLAYER_BLACK, SQUARE_SIZE, TEXT_COLOR, WIDTH, UNFINISHED
 from .board import Board
+from .pieces import Queen, Knight, Rook, Bishop
 
 
 class Game:
@@ -11,11 +13,6 @@ class Game:
     know what object currently occupies a board position, update the board
     when a successful move is made, and to determine the current game state.
     """
-    # class constants
-    FONT_SIZE = WIDTH // 20
-    BACKGROUND = (0, 0, 0)
-    TEXT = (255, 255, 255)
-
     def __init__(self, window):
         """Starts a ChessVar game. Takes the game window as parameter and
         initializes further data members via the reset function.
@@ -32,7 +29,8 @@ class Game:
 
     def update_turn(self):
         """Takes no parameters. Signals a new turn and updates the turn data
-        member to the other team.
+        member to the other team, as well as clearing any en passant status
+        from any pieces not captured on that turn.
         """
         if self._turn == PLAYER_WHITE:
             self._turn = PLAYER_BLACK
@@ -51,6 +49,9 @@ class Game:
                 self.display_message(f'{PLAYER_BLACK} Wins! Play again: y or n?')
             else:
                 self.display_message(f'{PLAYER_WHITE} Wins! Play again: y or n?')
+
+        if self._board.get_promoted_pawn():
+            self.choose_promotion()
 
         # Update Board
         pygame.display.update()
@@ -75,11 +76,19 @@ class Game:
         """Gets piece clicked by mouse and checks validity of piece moving or
         where it's moving to. Gives warning for any invalid choices.
         """
+        piece = self._board.get_piece(row, col)
+
+        # if pawn promotion available
+        if self._board.get_promoted_pawn():
+            if row == 3 and 2 <= col <= 5:
+                return self._board.promote_pawn(self._board.get_promoted_pawn(), col)
+            else:
+                self.warning()
+                return
+
         # if moving piece is already chosen
         if self._chosen:
             return self.make_move(self._chosen, row, col)
-
-        piece = self._board.get_piece(row, col)
 
         # check validity
         if piece is not None and piece.get_team() == self._turn:
@@ -88,14 +97,13 @@ class Game:
             # if piece is valid but has no valid moves
             if not self._valid_moves:
                 self.warning()
-                return False
+                return
 
             self._chosen = piece
-            return True
+            return
 
         # invalid choice
         self.warning()
-        return False
 
     def make_move(self, piece, row, col):
         """Simulates a move on the game board. Takes three parameters, the piece
@@ -119,8 +127,8 @@ class Game:
 
     def display_message(self, message):
         """Displays message to middle of game board."""
-        font = pygame.font.SysFont('comicsans', self.FONT_SIZE)
-        text = font.render(message, True, self.TEXT, self.BACKGROUND)
+        font = pygame.font.SysFont('comicsans', FONT_SIZE)
+        text = font.render(message, True, TEXT_COLOR, BACKGROUND)
         text_rect = text.get_rect()
         text_rect.center = (WIDTH // 2, HEIGHT // 2)
         self._window.blit(text, text_rect)
@@ -130,3 +138,37 @@ class Game:
         self.display_message('Invalid Choice!')
         pygame.display.update()
         pygame.time.wait(900)  # Display message for 0.9 seconds only
+
+    def choose_promotion(self):
+        """Prompts for choice of pawn promotion."""
+        padding = 10
+
+        # Prepare message
+        font = pygame.font.SysFont('comicsans', 20)
+        text = font.render('Pawn Promotion: Choose Wisely!', True, TEXT_COLOR, BACKGROUND)
+        text_rect = text.get_rect()
+
+        # Create fill background
+        main_rect = pygame.draw.rect(self._window, BACKGROUND, (SQUARE_SIZE * 2 - padding,
+                                                                HEIGHT // 2 - SQUARE_SIZE - text_rect.height,
+                                                                SQUARE_SIZE * 4 + padding * 2,
+                                                                SQUARE_SIZE + text_rect.height + padding))
+        # Display message
+        text_rect.centerx = main_rect.centerx
+        text_rect.top = main_rect.top
+        pygame.display.get_surface().blit(text, text_rect)
+
+        # Create image background
+        pygame.draw.rect(self._window, BOARD_COLOR, (main_rect.x + padding, main_rect.y + text_rect.height,
+                                                     SQUARE_SIZE * 4, SQUARE_SIZE))
+
+        # Display images/choices
+        queen = Queen(self._board.get_promoted_pawn().get_team(), 3, 2)
+        knight = Knight(self._board.get_promoted_pawn().get_team(), 3, 3)
+        rook = Rook(self._board.get_promoted_pawn().get_team(), 3, 4)
+        bishop = Bishop(self._board.get_promoted_pawn().get_team(), 3, 5)
+
+        choices = [queen, knight, rook, bishop]
+
+        for choice in choices:
+            choice.draw(self._window)

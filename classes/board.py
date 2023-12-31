@@ -1,5 +1,6 @@
 import pygame
-from constants import COLS, BOARD_COLOR, SQUARE_COLOR, PLAYER_WHITE, PLAYER_BLACK, ROWS, SQUARE_SIZE
+from constants import COLS, BOARD_COLOR, SQUARE_COLOR,\
+    PLAYER_WHITE, PLAYER_BLACK, ROWS, SQUARE_SIZE
 from .pieces import Bishop, King, Knight, Pawn, Queen, Rook
 
 
@@ -17,6 +18,7 @@ class Board:
         """
         self._board = []    # will become nested list
         self._pieces = {}
+        self._promoted_pawn = None
         self.set_up_board()     # sets up board data member
         self.set_up_pieces()    # sets up pieces data member
 
@@ -27,6 +29,10 @@ class Board:
     def get_pieces(self):
         """Takes no parameters and returns the pieces dictionary data member."""
         return self._pieces
+
+    def get_promoted_pawn(self):
+        """Takes no parameters and returns the promoted pawn data member."""
+        return self._promoted_pawn
 
     def set_up_board(self):
         """Takes no parameters. Sets up the game board with black and white
@@ -141,12 +147,40 @@ class Board:
          self._board[row][col], self._board[piece.get_row()][piece.get_col()]
 
         # update piece information
-        # en passant?
-        if piece.get_type() == 'PAWN' and piece.is_first_turn() and (3 <= row <= 4):
-            left = self._board[row][col - 1] if col > 0 else None
-            right = self._board[row][col + 1] if col < 7 else None
-            if (left is not None and left.get_type() == 'PAWN' and left.get_team() != piece.get_team()) \
-             or (right is not None and right.get_type() == 'PAWN' and right.get_team() != piece.get_team()):
-                piece.is_en_passant()
+        if piece.get_type() == 'PAWN':
+            # en passant?
+            if piece.is_first_turn() and (3 <= row <= 4):
+                left = self._board[row][col - 1] if col > 0 else None
+                right = self._board[row][col + 1] if col < 7 else None
+                if (left is not None and left.get_type() == 'PAWN' and left.get_team() != piece.get_team()) \
+                 or (right is not None and right.get_type() == 'PAWN' and right.get_team() != piece.get_team()):
+                    piece.is_en_passant()
+
+            # pawn promotion to Queen
+            if row == 0 or row == 7:
+                self._promoted_pawn = piece
+
         piece.not_first()
         piece.change_pos(row, col)
+
+    def promote_pawn(self, pawn, choice_col):
+        """Takes pawn to be promoted as parameter and updates piece to player's
+        choice.
+        """
+        team = pawn.get_team()
+        pawn_row = pawn.get_row()
+        pawn_col = pawn.get_col()
+
+        # keys correspond to displayed choices
+        choices = {
+            2: Queen(team, pawn_row, pawn_col),
+            3: Knight(team, pawn_row, pawn_col),
+            4: Rook(team, pawn_row, pawn_col),
+            5: Bishop(team, pawn_row, pawn_col)
+        }
+
+        # Promote pawn and update # of pieces
+        self._board[pawn_row][pawn_col] = choices[choice_col]
+        key = (team, self._board[pawn_row][pawn_col].get_type())
+        self._pieces[key] += 1
+        self._promoted_pawn = None

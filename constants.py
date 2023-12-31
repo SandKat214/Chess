@@ -9,8 +9,12 @@ UNFINISHED = 'UNFINISHED'
 PLAYER_WHITE = 'WHITE'
 PLAYER_BLACK = 'BLACK'
 
-BOARD_COLOR = (219, 186, 155)    # light beige
-SQUARE_COLOR = (242, 219, 183)    # dark beige
+BOARD_COLOR = (219, 186, 155)    # dark beige
+SQUARE_COLOR = (242, 219, 183)    # light beige
+FONT_SIZE = WIDTH // 20
+BACKGROUND = (0, 0, 0)      # black
+TEXT_COLOR = (255, 255, 255)        # white
+
 WHITE_PAWN = pygame.transform.scale(pygame.image.load('assets/white_pawn.png'), (PIECE_SIZE, PIECE_SIZE))
 WHITE_ROOK = pygame.transform.scale(pygame.image.load('assets/white_rook.png'), (PIECE_SIZE, PIECE_SIZE))
 WHITE_KNIGHT = pygame.transform.scale(pygame.image.load('assets/white_knight.png'), (PIECE_SIZE, PIECE_SIZE))
