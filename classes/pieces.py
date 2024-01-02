@@ -1,4 +1,4 @@
-from constants import PLAYER_WHITE, SQUARE_SIZE, \
+from constants import COLS, PLAYER_WHITE, ROWS, SQUARE_SIZE, \
     BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, \
     WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK
 
@@ -35,10 +35,6 @@ class Piece:
     def get_col(self):
         """Takes no parameters and returns to column data member."""
         return self._col
-
-    def is_first_turn(self):
-        """Returns first turn data member."""
-        return self._first_turn
 
     def find_position(self):
         """Calculates the middle of the piece's square on the game window."""
@@ -102,9 +98,18 @@ class Pawn(Piece):
         """Takes no parameters and returns the piece type."""
         return 'PAWN'
 
-    def is_en_passant(self):
-        """Sets en passant data member to True."""
-        self._en_passant = True
+    def en_passant(self, board):
+        """Checks whether piece has positioned itself for en passant."""
+
+        # Did pawn move two spaces on first move
+        if self._first_turn and (3 <= self._row <= 4):
+            left = board[self._row][self._col - 1] if self._col > 0 else None
+            right = board[self._row][self._col + 1] if self._col < 7 else None
+
+            # is there a pawn of the opposite team to the left or right
+            if (left is not None and left.get_type() == 'PAWN' and left._team != self._team) \
+             or (right is not None and right.get_type() == 'PAWN' and right._team != self._team):
+                self._en_passant = True
 
     def not_en_passant(self):
         """Sets en passant data member to False."""
@@ -320,6 +325,13 @@ class King(Piece):
     representation of the King, as well as the particular movements associated
     with a King piece.
     """
+    def __init__(self, team, row, col):
+        """Creates a kig piece with the same parameters and data members as the parent
+        class. Includes one additional data member, check boolean.
+        """
+        super().__init__(team, row, col)
+        self._check = False
+
     def get_type(self):
         """Takes no parameters and returns the piece type."""
         return 'KING'
@@ -352,4 +364,67 @@ class King(Piece):
         valid_moves.update(self.move(board, self._row + 1, self._col + 1, self._team))
         valid_moves.update(self.move(board, self._row - 1, self._col + 1, self._team))
 
+        # Castling
+        valid_moves.update(self.castle(board))
+
         return valid_moves
+
+    def check(self, board):
+        """Examines current board to determine whether king is in check."""
+        # iterate through each board position
+        for row in range(ROWS):
+            for col in range(COLS):
+                piece = board[row][col]
+
+                # if piece is opposite team
+                if piece is not None and piece.get_team() != self._team:
+                    possible_moves = piece.get_valid_moves(board)
+
+                    # find out if king is threatened
+                    for pos, capture in possible_moves.items():
+                        if capture is self:
+                            self._check = True
+                            break
+                        self._check = False
+                    else:
+                        continue
+                    break
+            else:
+                continue
+            break
+
+        print(f"{self._team} king check is {self._check}")
+        return self._check
+
+    def castle(self, board):
+        """Examines current board to determine if castling is a valid move,
+        and returns dictionary of valid castles if legal."""
+        check_path = {}
+        castles = {}
+        if self._first_turn:
+            # West & East
+            check_path.update(self.move(board, self._row, self._col - 1, self._team, 0, -1, True))
+            check_path.update(self.move(board, self._row, self._col + 1, self._team, 0, +1, True))
+
+        for row, col in check_path:
+            # Queenside
+            if col == 1:
+                rook = board[self._row][0]
+                if self.check_rook(rook):
+                    castles[(self._row, 2)] = {'rook': rook, 'pos': (self._row, 3)}
+
+            # Kingside
+            if col == 6:
+                rook = board[self._row][7]
+                if self.check_rook(rook):
+                    castles[(self._row, col)] = {'rook': rook, 'pos': (self._row, 5)}
+
+        return castles
+
+    def check_rook(self, rook):
+        """Works with the castle function to determine if the neighboring rook
+        is valid for castling.
+        """
+        if rook is not None and rook.get_type() == 'ROOK' and rook.get_team() == self._team:
+            return True
+        return False

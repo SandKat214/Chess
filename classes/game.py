@@ -116,7 +116,17 @@ class Game:
         self._chosen = None
 
         if (row, col) in self._valid_moves:
-            self._board.update_board(piece, row, col, self._valid_moves[(row, col)])
+            # Check if move is a castle
+            if isinstance(self._valid_moves[(row, col)], dict):
+                self._board.update_board(piece, row, col, None)
+                self._board.update_board(self._valid_moves[(row, col)]['rook'],
+                                         self._valid_moves[(row, col)]['pos'][0],
+                                         self._valid_moves[(row, col)]['pos'][1], None)
+            # Any other type of move
+            else:
+                self._board.update_board(piece, row, col, self._valid_moves[(row, col)])
+
+            # Complete move
             self._valid_moves = {}
             self.update_turn()
             return True
@@ -144,8 +154,8 @@ class Game:
         padding = 10
 
         # Prepare message
-        font = pygame.font.SysFont('comicsans', 20)
-        text = font.render('Pawn Promotion: Choose Wisely!', True, TEXT_COLOR, BACKGROUND)
+        font = pygame.font.SysFont('comicsans', SQUARE_SIZE // 4)
+        text = font.render('Pawn Promotion: Click your choice!', True, TEXT_COLOR, BACKGROUND)
         text_rect = text.get_rect()
 
         # Create fill background
@@ -163,12 +173,12 @@ class Game:
                                                      SQUARE_SIZE * 4, SQUARE_SIZE))
 
         # Display images/choices
-        queen = Queen(self._board.get_promoted_pawn().get_team(), 3, 2)
-        knight = Knight(self._board.get_promoted_pawn().get_team(), 3, 3)
-        rook = Rook(self._board.get_promoted_pawn().get_team(), 3, 4)
-        bishop = Bishop(self._board.get_promoted_pawn().get_team(), 3, 5)
-
-        choices = [queen, knight, rook, bishop]
+        choices = [
+            Queen(self._board.get_promoted_pawn().get_team(), 3, 2),
+            Knight(self._board.get_promoted_pawn().get_team(), 3, 3),
+            Rook(self._board.get_promoted_pawn().get_team(), 3, 4),
+            Bishop(self._board.get_promoted_pawn().get_team(), 3, 5)
+        ]
 
         for choice in choices:
             choice.draw(self._window)

@@ -18,6 +18,7 @@ class Board:
         """
         self._board = []    # will become nested list
         self._pieces = {}
+        self._kings = []
         self._promoted_pawn = None
         self.set_up_board()     # sets up board data member
         self.set_up_pieces()    # sets up pieces data member
@@ -59,7 +60,9 @@ class Board:
                     elif col == 3:
                         self._board[row].append(Queen(team, row, col))
                     else:
-                        self._board[row].append(King(team, row, col))
+                        king = King(team, row, col)
+                        self._kings.append(king)
+                        self._board[row].append(king)
 
                 # pawns
                 elif row == 1 or row == 6:
@@ -147,25 +150,25 @@ class Board:
          self._board[row][col], self._board[piece.get_row()][piece.get_col()]
 
         # update piece information
+        piece.change_pos(row, col)
+
         if piece.get_type() == 'PAWN':
             # en passant?
-            if piece.is_first_turn() and (3 <= row <= 4):
-                left = self._board[row][col - 1] if col > 0 else None
-                right = self._board[row][col + 1] if col < 7 else None
-                if (left is not None and left.get_type() == 'PAWN' and left.get_team() != piece.get_team()) \
-                 or (right is not None and right.get_type() == 'PAWN' and right.get_team() != piece.get_team()):
-                    piece.is_en_passant()
+            piece.en_passant(self._board)
 
-            # pawn promotion to Queen
+            # pawn promotion
             if row == 0 or row == 7:
                 self._promoted_pawn = piece
 
+        # determine check
+        for king in self._kings:
+            king.check(self._board)
+
         piece.not_first()
-        piece.change_pos(row, col)
 
     def promote_pawn(self, pawn, choice_col):
-        """Takes pawn to be promoted as parameter and updates piece to player's
-        choice.
+        """Takes pawn to be promoted and clicked choice as parameter
+        and updates piece to player's choice.
         """
         team = pawn.get_team()
         pawn_row = pawn.get_row()
