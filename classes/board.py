@@ -125,6 +125,49 @@ class Board:
                 if piece is not None and piece.get_team() == turn_team and piece.get_type() == 'PAWN':
                     piece.not_en_passant()
 
+    def validate_moves(self, piece, moves):
+        """Takes moving piece and dictionary of moves as parameter and ensures that no moves
+        will place team's king in check.
+        """
+        return_row = piece.get_row()
+        return_col = piece.get_col()
+        keys_to_be_removed = []
+        captured_piece = False
+
+        for row, col in moves:
+            captured = moves[(row, col)]
+            if not isinstance(captured, dict):      # king castling
+                if captured is not None:
+                    captured_piece = True
+                    captured_row = captured.get_row()
+                    captured_col = captured.get_col()
+                    self._board[captured_row][captured_col] = None
+
+                # Preliminary swap to evaluate check
+                self.swap(piece, row, col)
+                for king in self._kings:
+                    if king.get_team() == piece.get_team():
+                        if king.check(self._board):
+                            keys_to_be_removed.append((row, col))
+
+                # Swap everything back
+                self.swap(piece, return_row, return_col)
+                if captured_piece:
+                    self._board[captured_row][captured_col] = captured
+                    captured.change_pos(captured_row, captured_col)
+                    captured_piece = False
+
+        # remove invalidated moves from dictionary
+        for key in keys_to_be_removed:
+            del moves[key]
+
+    def swap(self, piece, row, col):
+        """Takes piece to be moved and row and column to be moved to and swaps them."""
+        self._board[piece.get_row()][piece.get_col()], self._board[row][col] = \
+            self._board[row][col], self._board[piece.get_row()][piece.get_col()]
+
+        piece.change_pos(row, col)
+
     def remove(self, piece):
         """Takes an object, from a certain board position, as parameter. If
         that object is a piece, removes it from the game board and updates
@@ -146,11 +189,7 @@ class Board:
         self.remove(captured)
 
         # swap the objects at the two locations
-        self._board[piece.get_row()][piece.get_col()], self._board[row][col] =\
-         self._board[row][col], self._board[piece.get_row()][piece.get_col()]
-
-        # update piece information
-        piece.change_pos(row, col)
+        self.swap(piece, row, col)
 
         if piece.get_type() == 'PAWN':
             # en passant?

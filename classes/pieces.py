@@ -124,7 +124,7 @@ class Pawn(Piece):
             window.blit(BLACK_PAWN, (self._x_coord - BLACK_PAWN.get_width() // 2,
                                      self._y_coord - BLACK_PAWN.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -186,7 +186,7 @@ class Rook(Piece):
             window.blit(BLACK_ROOK, (self._x_coord - BLACK_ROOK.get_width() // 2,
                                      self._y_coord - BLACK_ROOK.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -221,7 +221,7 @@ class Knight(Piece):
             window.blit(BLACK_KNIGHT, (self._x_coord - BLACK_KNIGHT.get_width() // 2,
                                        self._y_coord - BLACK_KNIGHT.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -262,7 +262,7 @@ class Bishop(Piece):
             window.blit(BLACK_BISHOP, (self._x_coord - BLACK_BISHOP.get_width() // 2,
                                        self._y_coord - BLACK_BISHOP.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -297,7 +297,7 @@ class Queen(Piece):
             window.blit(BLACK_QUEEN, (self._x_coord - BLACK_QUEEN.get_width() // 2,
                                       self._y_coord - BLACK_QUEEN.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -345,7 +345,7 @@ class King(Piece):
             window.blit(BLACK_KING, (self._x_coord - BLACK_KING.get_width() // 2,
                                      self._y_coord - BLACK_KING.get_height() // 2))
 
-    def get_valid_moves(self, board):
+    def get_moves(self, board):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
@@ -378,7 +378,7 @@ class King(Piece):
 
                 # if piece is opposite team
                 if piece is not None and piece.get_team() != self._team:
-                    possible_moves = piece.get_valid_moves(board)
+                    possible_moves = piece.get_moves(board)
 
                     # find out if king is threatened
                     for pos, capture in possible_moves.items():
