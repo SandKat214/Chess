@@ -11,7 +11,7 @@ FPS = 60
 
 # Set game window
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Chess Var')
+pygame.display.set_caption('Chess')
 
 
 def get_row_col_from_mouse(position):
