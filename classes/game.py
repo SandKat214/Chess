@@ -92,7 +92,7 @@ class Game:
 
         # check validity
         if piece is not None and piece.get_team() == self._turn:
-            self._valid_moves = piece.get_moves(self._board.get_board())
+            self._valid_moves = piece.get_moves(self._board)
             self._board.validate_moves(piece, self._valid_moves)
 
             # if piece is valid but has no valid moves

@@ -147,7 +147,7 @@ class Board:
                 self.swap(piece, row, col)
                 for king in self._kings:
                     if king.get_team() == piece.get_team():
-                        if king.check(self._board):
+                        if king.check(self):
                             keys_to_be_removed.append((row, col))
 
                 # Swap everything back
@@ -201,7 +201,7 @@ class Board:
 
         # determine check
         for king in self._kings:
-            king.check(self._board)
+            king.check(self)
 
         piece.not_first()
 

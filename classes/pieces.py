@@ -124,11 +124,12 @@ class Pawn(Piece):
             window.blit(BLACK_PAWN, (self._x_coord - BLACK_PAWN.get_width() // 2,
                                      self._y_coord - BLACK_PAWN.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         stand_moves = {}
         capture_moves = {}
 
@@ -186,11 +187,12 @@ class Rook(Piece):
             window.blit(BLACK_ROOK, (self._x_coord - BLACK_ROOK.get_width() // 2,
                                      self._y_coord - BLACK_ROOK.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         valid_moves = {}
 
         # North, South, East, and West
@@ -221,11 +223,12 @@ class Knight(Piece):
             window.blit(BLACK_KNIGHT, (self._x_coord - BLACK_KNIGHT.get_width() // 2,
                                        self._y_coord - BLACK_KNIGHT.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         valid_moves = {}
 
         # 2up/1left, 2up/1right, 2down/1left, 2down/1right
@@ -262,11 +265,12 @@ class Bishop(Piece):
             window.blit(BLACK_BISHOP, (self._x_coord - BLACK_BISHOP.get_width() // 2,
                                        self._y_coord - BLACK_BISHOP.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         valid_moves = {}
 
         # Northwest, Northeast, Southwest, Southeast
@@ -297,11 +301,12 @@ class Queen(Piece):
             window.blit(BLACK_QUEEN, (self._x_coord - BLACK_QUEEN.get_width() // 2,
                                       self._y_coord - BLACK_QUEEN.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         valid_moves = {}
 
         # North, West, South, East
@@ -345,11 +350,12 @@ class King(Piece):
             window.blit(BLACK_KING, (self._x_coord - BLACK_KING.get_width() // 2,
                                      self._y_coord - BLACK_KING.get_height() // 2))
 
-    def get_moves(self, board):
+    def get_moves(self, board_obj):
         """Takes the current game board as parameter. Determines the legal
         moves for the piece, and returns them in the form of a dictionary containing
         tuples of each row and column position.
         """
+        board = board_obj.get_board()
         valid_moves = {}
 
         # North, West, South, East
@@ -365,12 +371,13 @@ class King(Piece):
         valid_moves.update(self.move(board, self._row - 1, self._col + 1, self._team))
 
         # Castling
-        valid_moves.update(self.castle(board))
+        valid_moves.update(self.castle(board_obj))
 
         return valid_moves
 
-    def check(self, board):
+    def check(self, board_obj):
         """Examines current board to determine whether king is in check."""
+        board = board_obj.get_board()
         # iterate through each board position
         for row in range(ROWS):
             for col in range(COLS):
@@ -378,50 +385,49 @@ class King(Piece):
 
                 # if piece is opposite team
                 if piece is not None and piece.get_team() != self._team:
-                    possible_moves = piece.get_moves(board)
+                    possible_moves = piece.get_moves(board_obj)
 
                     # find out if king is threatened
                     for pos, capture in possible_moves.items():
                         if capture is self:
                             self._check = True
-                            break
-                        self._check = False
-                    else:
-                        continue
-                    break
-            else:
-                continue
-            break
+                            return True
 
-        print(f"{self._team} king check is {self._check}")
-        return self._check
+        self._check = False
+        return False
 
-    def castle(self, board):
+    def castle(self, board_obj):
         """Examines current board to determine if castling is a valid move,
         and returns dictionary of valid castles if legal."""
-        check_path = {}
+        board = board_obj.get_board()
+        queenside = {}
+        kingside = {}
         castles = {}
-        if self._first_turn:
+
+        # Is first move and cannot castle in check
+        if self._first_turn and not self._check:
             # West & East
-            check_path.update(self.move(board, self._row, self._col - 1, self._team, 0, -1, True))
-            check_path.update(self.move(board, self._row, self._col + 1, self._team, 0, +1, True))
+            queenside.update(self.move(board, self._row, self._col - 1, self._team, 0, -1, True))
+            kingside.update(self.move(board, self._row, self._col + 1, self._team, 0, +1, True))
 
-        for row, col in check_path:
-            # Queenside
-            if col == 1:
-                rook = board[self._row][0]
-                if self.check_rook(rook):
-                    castles[(self._row, 2)] = {'rook': rook, 'pos': (self._row, 3)}
+        # Queenside
+        if (self._row, 1) in queenside:
+            del queenside[(self._row, 1)]
+            board_obj.validate_moves(self, queenside)   # cannot move through check
+            rook = board[self._row][0]
+            if self.castle_rook(rook) and len(queenside) == 2:
+                castles[(self._row, 2)] = {'rook': rook, 'pos': (self._row, 3)}
 
-            # Kingside
-            if col == 6:
-                rook = board[self._row][7]
-                if self.check_rook(rook):
-                    castles[(self._row, col)] = {'rook': rook, 'pos': (self._row, 5)}
+        # Kingside
+        if (self._row, 6) in kingside:
+            board_obj.validate_moves(self, queenside)
+            rook = board[self._row][7]
+            if self.castle_rook(rook) and len(kingside) == 2:
+                castles[(self._row, 6)] = {'rook': rook, 'pos': (self._row, 5)}
 
         return castles
 
-    def check_rook(self, rook):
+    def castle_rook(self, rook):
         """Works with the castle function to determine if the neighboring rook
         is valid for castling.
         """
