@@ -6,7 +6,7 @@ from .pieces import Queen, Knight, Rook, Bishop
 
 
 class Game:
-    """Represents a game of the chess variant. This class is responsible
+    """Represents a game of chess. This class is responsible
     for the aspects of the game having to do with active play, such as
     making a move, keeping track of the current turn, and displaying the
     current state of the board. Works directly with the Board class to
@@ -14,7 +14,7 @@ class Game:
     when a successful move is made, and to determine the current game state.
     """
     def __init__(self, window):
-        """Starts a ChessVar game. Takes the game window as parameter and
+        """Starts a Chess game. Takes the game window as parameter and
         initializes further data members via the reset function.
         """
         self._window = window
@@ -43,12 +43,12 @@ class Game:
     def display(self):
         """Takes no parameters. Displays the current state of the game."""
         self._board.draw(self._window)
-        if self.get_winner() != UNFINISHED:
-            winner = self.get_winner()
-            if winner == PLAYER_BLACK:
-                self.display_message(f'{PLAYER_BLACK} Wins! Play again: y or n?')
+        result = self.get_winner()
+        if result != UNFINISHED:
+            if result == PLAYER_BLACK:
+                self.display_message(f'{PLAYER_BLACK} Wins. Play again: y or n?')
             else:
-                self.display_message(f'{PLAYER_WHITE} Wins! Play again: y or n?')
+                self.display_message(f'{PLAYER_WHITE} Wins. Play again: y or n?')
 
         if self._board.get_promoted_pawn():
             self.choose_promotion()
@@ -57,17 +57,14 @@ class Game:
         pygame.display.update()
 
     def get_winner(self):
-        """Takes no parameters. Checks the current state of the pieces on
-        the board and, if warranted, returns the winning team.
-        Otherwise, UNFINISHED.
+        """Takes no parameters. Checks if either team is in checkmate, and
+        returns the winner. Otherwise, UNFINISHED.
         """
-        for piece, value in self._board.get_pieces().items():
-            # If a player has lost
-            if value <= 0:
-                if piece[0] == PLAYER_WHITE:
-                    return PLAYER_BLACK
-                else:
-                    return PLAYER_WHITE
+        if self._board.checkmate(PLAYER_BLACK):
+            return PLAYER_WHITE
+
+        if self._board.checkmate(PLAYER_WHITE):
+            return PLAYER_BLACK
 
         # If no one has lost
         return UNFINISHED

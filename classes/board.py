@@ -5,31 +5,25 @@ from .pieces import Bishop, King, Knight, Pawn, Queen, Rook
 
 
 class Board:
-    """Represents a chess variant game board. This class handles aspects
+    """Represents a chess game board. This class handles aspects
     of the game having to do with the game board, such as keeping track of
-    all piece positions, and how many of each type of piece is left on the
-    board. Works directly with the Piece class and its subclasses to determine
-    where each piece can legally move.
+    all piece positions. Whether moves will cause check and whether there
+    is a checkmate. Works directly with the Piece class and its
+    subclasses to determine where each piece can legally move.
     """
 
     def __init__(self):
-        """Sets a ChessVar game board. Data members are initialized without
+        """Sets a Chess game board. Data members are initialized without
         parameters. Called methods complete initialization.
         """
         self._board = []    # will become nested list
-        self._pieces = {}
         self._kings = []
         self._promoted_pawn = None
         self.set_up_board()     # sets up board data member
-        self.set_up_pieces()    # sets up pieces data member
 
     def get_board(self):
         """Takes no parameter and returns the board data member."""
         return self._board
-
-    def get_pieces(self):
-        """Takes no parameters and returns the pieces dictionary data member."""
-        return self._pieces
 
     def get_promoted_pawn(self):
         """Takes no parameters and returns the promoted pawn data member."""
@@ -71,26 +65,6 @@ class Board:
                 # empty squares
                 else:
                     self._board[row].append(None)
-
-    def set_up_pieces(self):
-        """Takes no parameters. Sets up the pieces dictionary with the initial
-        number of each type of piece for each team. The key is a string of the
-        piece team and type, and the value is how many are on the board.
-        """
-        self._pieces.update({
-            (PLAYER_WHITE, 'PAWN'): 8,
-            (PLAYER_WHITE, 'ROOK'): 2,
-            (PLAYER_WHITE, 'KNIGHT'): 2,
-            (PLAYER_WHITE, 'BISHOP'): 2,
-            (PLAYER_WHITE, 'QUEEN'): 1,
-            (PLAYER_WHITE, 'KING'): 1,
-            (PLAYER_BLACK, 'PAWN'): 8,
-            (PLAYER_BLACK, 'ROOK'): 2,
-            (PLAYER_BLACK, 'KNIGHT'): 2,
-            (PLAYER_BLACK, 'BISHOP'): 2,
-            (PLAYER_BLACK, 'QUEEN'): 1,
-            (PLAYER_BLACK, 'KING'): 1
-        })
 
     def draw(self, window):
         """Draws the board."""
@@ -175,9 +149,7 @@ class Board:
         """
         # if object is a piece
         if piece is not None:
-            key = (piece.get_team(), piece.get_type())
             self._board[piece.get_row()][piece.get_col()] = None    # remove piece from board
-            self._pieces[key] -= 1      # decrease quantity in pieces library
 
     def update_board(self, piece, row, col, captured):
         """Takes a piece object as a parameter, as well as the row and column
@@ -221,8 +193,27 @@ class Board:
             5: Bishop(team, pawn_row, pawn_col)
         }
 
-        # Promote pawn and update # of pieces
+        # Promote pawn
         self._board[pawn_row][pawn_col] = choices[choice_col]
-        key = (team, self._board[pawn_row][pawn_col].get_type())
-        self._pieces[key] += 1
         self._promoted_pawn = None
+
+    def checkmate(self, team):
+        """Iterates over all team pieces on the board and returns true
+        if that team's king is in checkmate.
+        """
+        for king in self._kings:
+            if king.get_team() == team and king.check(self):
+                for row in range(ROWS):
+                    for col in range(COLS):
+                        piece = self._board[row][col]
+                        if piece is not None and piece.get_team() == team:
+                            valid_moves = piece.get_moves(self)
+                            self.validate_moves(piece, valid_moves)
+                            if valid_moves:     # if any team piece has a valid move
+                                return False
+
+                # otherwise checkmate
+                return True
+
+        # king is not in check
+        return False
