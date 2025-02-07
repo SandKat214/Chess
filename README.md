@@ -1,4 +1,4 @@
-# Chess Pygame GUI
+# Chess GUI
 
 This project started life as the portfolio assignment from my Intro to Computer Programming class. The assignment was a chess variant to be played in the terminal window, with no special moves, where the winner is the first one to make it to the other side of the board.
 
